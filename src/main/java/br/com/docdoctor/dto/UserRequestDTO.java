@@ -1,49 +1,23 @@
-package br.com.docdoctor.entities;
+package br.com.docdoctor.dto;
 
 import br.com.docdoctor.enums.UserTypeEnum;
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
-@Entity
-@Table(name = "tbl_users")
-public class User {
+public class UserRequestDTO
+{
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
-    @Column(name = "full_name")
+    @JsonProperty("name")
     private String fullName;
-    @Column(name = "email")
+
     private String email;
-    @Column(name = "phone")
+
     private String phone;
-    @Column(name = "birth_date")
+
     private Date birthDate;
-    @Column(name = "user_type")
+
     private UserTypeEnum userType;
-
-    public User(Long id, String fullName, String email, String phone, Date birthDate, UserTypeEnum userType) {
-        this.id = id;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
-        this.birthDate = birthDate;
-        this.userType = userType;
-    }
-
-    public User() {
-
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getFullName() {
         return fullName;
