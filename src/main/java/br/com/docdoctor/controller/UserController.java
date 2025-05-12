@@ -1,6 +1,7 @@
 package br.com.docdoctor.controller;
 
 import br.com.docdoctor.dto.UserRequestDTO;
+import br.com.docdoctor.dto.UserResponseDTO;
 import br.com.docdoctor.entities.User;
 import br.com.docdoctor.service.user.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -33,22 +33,21 @@ public class UserController {
     private final IUserService service;
 
     @Autowired
-    public UserController(IUserService userService) {
-        this.service = userService;
+    public UserController(IUserService service) {
+        this.service = service;
     }
 
     @Operation(summary = "Criar novo usuário", description = "Registra um novo usuário no sistema")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Usuário criado", content = @Content(schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "201", description = "Usuário criado", content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Usuário já existe", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "500", description = "Erro interno", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping
-    public Mono<ResponseEntity<User>> create(@Valid @RequestBody UserRequestDTO userRequest) {
-        return service.create(userRequest)
-                .map(user -> ResponseEntity.status(HttpStatus.CREATED).body(user))
-                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+    public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody UserRequestDTO userRequest) {
+        UserResponseDTO createdUser = service.create(userRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
     @Operation(summary = "Listar usuários", description = "Retorna todos os usuários cadastrados")
@@ -56,8 +55,8 @@ public class UserController {
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = User.class))))
     @ApiResponse(responseCode = "204", description = "Nenhum usuário encontrado")
     @GetMapping
-    public Mono<ResponseEntity<Mono<List<User>>>> listAll() {
-        return Mono.just(ResponseEntity.ok(service.listAll()));
+    public ResponseEntity<List<UserResponseDTO>> listAll() {
+        return ResponseEntity.ok(service.listAll());
     }
 
     @Operation(summary = "Buscar usuário por ID", description = "Retorna um usuário específico pelo seu ID")
@@ -65,9 +64,8 @@ public class UserController {
             content = @Content(schema = @Schema(implementation = User.class)))
     @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<User>> getUserById(@PathVariable Long id) {
-        return service.findUserById(id)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
+        UserResponseDTO user = service.findUserById(id);
+        return ResponseEntity.ok(user);
     }
 }

@@ -1,15 +1,15 @@
 package br.com.docdoctor.service.user;
 
 import br.com.docdoctor.dto.UserRequestDTO;
+import br.com.docdoctor.dto.UserResponseDTO;
 import br.com.docdoctor.entities.User;
+import br.com.docdoctor.exception.UserNotFoundException;
 import br.com.docdoctor.mapper.UserMapper;
 import br.com.docdoctor.repository.UserRepository;
-import org.hibernate.service.spi.ServiceException;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -23,39 +23,43 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Mono<User> create(UserRequestDTO newUser) {
-        return Mono.fromCallable(() -> {
-                    User user = userMapper.toEntity(newUser);
-                    return repository.save(user);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(e -> Mono.error(new ServiceException("Erro ao salvar usuário", e)));
+    public UserResponseDTO create(UserRequestDTO userDTO) {
+        User user = userMapper.toEntity(userDTO);
+        User savedUser = repository.save(user);
+        return userMapper.toRespondeDTO(savedUser);
     }
 
     @Override
-    public User update(User user) {
-        //Todo: implementar
-        return null;
+    public List<UserResponseDTO> listAll() {
+        return repository.findAll().stream()
+                .map(user -> userMapper.toRespondeDTO(user))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Mono<List<User>> listAll() {
-        return Mono.fromCallable(() -> repository.findAll())
-                .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(e -> Mono.error(new ServiceException("Erro ao listar usuários", e)));
+    public UserResponseDTO findUserById(Long id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        return userMapper.toRespondeDTO(user);
     }
 
     @Override
-    public Mono<User> findUserById(Long id) {
-        return Mono.fromCallable(() -> repository.findById(id).orElseThrow(() ->
-                        new RuntimeException("Usuário não encontrado com ID: " + id)))
-                .subscribeOn(Schedulers.boundedElastic());
-    }
+    public UserResponseDTO update(Long id) {
+        User existingUser = repository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
 
-//    Todo: Colocar userfundByname para ser mais facil de encontrar
+        userMapper.toRespondeDTO(existingUser);
+        existingUser.setId(id);
+        User updatedUser = repository.save(existingUser);
+
+        return userMapper.toRespondeDTO(updatedUser);
+    }
 
     @Override
     public void remove(Long id) {
-        //Todo: implementar
+        if (!repository.existsById(id)) {
+            throw new UserNotFoundException(id);
+        }
+        repository.deleteById(id);
     }
 }
