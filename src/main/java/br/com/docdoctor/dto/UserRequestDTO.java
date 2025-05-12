@@ -1,61 +1,28 @@
 package br.com.docdoctor.dto;
 
 import br.com.docdoctor.enums.UserTypeEnum;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.*;
 
 import java.util.Date;
 
-public class UserRequestDTO
-{
+public record UserRequestDTO(
+        @NotBlank(message = "Nome completo é obrigatório")
+        @Size(min = 3, max = 100, message = "Nome completo deve conter entre 3 e 100 caracteres")
+        String fullName,
 
-    @JsonProperty("name")
-    private String fullName;
+        @NotBlank(message = "E-mail é obrigatório")
+        @Email(message = "Informe um e-mail válido")
+        String email,
 
-    private String email;
+        @NotBlank(message = "Telefone é obrigatório")
+        @Pattern(regexp = "^\\+\\d{1,3} \\d{2} \\d{4,5}-\\d{4}$",
+                message = "Telefone deve estar no formato internacional (ex: +55 11 98765-4321)")
+        String phone,
 
-    private String phone;
+        @NotNull(message = "Data de nascimento é obrigatória")
+        @Past(message = "Data de nascimento deve ser uma data passada")
+        Date birthDate,
 
-    private Date birthDate;
-
-    private UserTypeEnum userType;
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public Date getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
-    }
-
-    public UserTypeEnum getUserType() {
-        return userType;
-    }
-
-    public void setUserType(UserTypeEnum userType) {
-        this.userType = userType;
-    }
-}
+        @NotNull(message = "Tipo de usuário é obrigatório")
+        UserTypeEnum userType
+) {}
