@@ -3,7 +3,7 @@ package br.com.docdoctor.dto;
 import br.com.docdoctor.enums.UserTypeEnum;
 import jakarta.validation.constraints.*;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public record UserRequestDTO(
         @NotBlank(message = "Nome completo é obrigatório")
@@ -21,8 +21,9 @@ public record UserRequestDTO(
 
         @NotNull(message = "Data de nascimento é obrigatória")
         @Past(message = "Data de nascimento deve ser uma data passada")
-        Date birthDate,
+        LocalDate birthDate,
 
         @NotNull(message = "Tipo de usuário é obrigatório")
         UserTypeEnum userType
-) {}
+) {
+}

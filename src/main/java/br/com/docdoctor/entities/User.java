@@ -1,10 +1,11 @@
 package br.com.docdoctor.entities;
 
 import br.com.docdoctor.enums.UserTypeEnum;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tbl_users")
@@ -32,15 +33,16 @@ public class User {
 
     @NotNull(message = "Data de nascimento é obrigatória")
     @Past(message = "Data de nascimento deve ser no passado")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(nullable = false)
-    private Date birthDate;
+    private LocalDate birthDate;
 
     @NotNull(message = "Tipo de usuário é obrigatório")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserTypeEnum userType;
 
-    public User(Long id, String fullName, String email, String phone, Date birthDate, UserTypeEnum userType) {
+    public User(Long id, String fullName, String email, String phone, LocalDate birthDate, UserTypeEnum userType) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -85,11 +87,11 @@ public class User {
         this.phone = phone;
     }
 
-    public Date getBirthDate() {
+    public LocalDate getBirthDate() {
         return birthDate;
     }
 
-    public void setBirthDate(Date birthDate) {
+    public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
     }
 
