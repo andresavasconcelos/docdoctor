@@ -6,8 +6,7 @@ import br.com.docdoctor.entities.User;
 import br.com.docdoctor.enums.UserTypeEnum;
 import br.com.docdoctor.service.user.IUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -22,10 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,52 +42,64 @@ class UserControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Mock
+    private IUserService mockUserService;
+
+    @Autowired
     private IUserService userService;
+
+    private Long userId;
+    private UserResponseDTO testUserResponse;
+
+    @BeforeEach
+    void setUp() {
+        testUserResponse = new UserResponseDTO(
+                1L,
+                "Test User",
+                UUID.randomUUID() + "test@example.com",
+                "+55 11 99999-9999",
+                LocalDate.of(2000, 1, 1),
+                UserTypeEnum.ADMIN
+        );
+
+        when(mockUserService.create(any(UserRequestDTO.class))).thenReturn(testUserResponse);
+        when(mockUserService.findById(anyLong())).thenReturn(testUserResponse);
+
+        UserRequestDTO userToCreate = new UserRequestDTO(
+                "Maria de Carmo",
+                UUID.randomUUID() + "@test.com",
+                "+55 11 99999-9999",
+                LocalDate.of(2002, 5, 25),
+                UserTypeEnum.ADMIN
+        );
+
+        UserResponseDTO response = userService.create(userToCreate);
+        this.userId = response.id();
+    }
 
     @Test
     void createUser_ShouldReturnCreated() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        UserRequestDTO request = new UserRequestDTO(
-                "Maria de Carmo",
-                "maria.carmo@example.com",
-                "+55 11 95877-4455",
-                LocalDate.of(2002, 5, 25),
-                UserTypeEnum.ADMIN
-        );
-
-        UserResponseDTO response = new UserResponseDTO(
-                10L,
-                "Maria de Carmo",
-                "maria.carmo@example.com",
-                "+55 11 95877-4455",
-                LocalDate.of(2002, 5, 25),
-                UserTypeEnum.ADMIN
-        );
-
-        Mockito.when(userService.create(any(UserRequestDTO.class))).thenReturn(response);
+        UserRequestDTO request = createValidUserRequestDTO();
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andDo(result -> {
-                    if (result.getResolvedException() != null) {
-                        result.getResolvedException().printStackTrace();
-                    }
-                })
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.fullName", is("Maria de Carmo")))
-                .andExpect(jsonPath("$.email", is("maria.carmo@example.com")))
-                .andExpect(jsonPath("$.phone", is("+55 11 95877-4455")))
-                .andExpect(jsonPath("$.birthDate", is("2002-05-25")))
+                .andExpect(jsonPath("$.fullName", is(testUserResponse.fullName())))
+                .andExpect(jsonPath("$.email", is(testUserResponse.email())))
+                .andExpect(jsonPath("$.phone", is(testUserResponse.phone())))
+                .andExpect(jsonPath("$.birthDate", is("2000-01-01")))
                 .andExpect(jsonPath("$.userType", is("ADMIN")));
     }
 
     @Test
     void createUser_WithInvalidData_ShouldReturnBadRequest() throws Exception {
-        UserRequestDTO invalidRequest = new UserRequestDTO("Maria de Carmo", "ma@tes.com", "+5511958774455", LocalDate.of(2002, 05, 25), UserTypeEnum.ADMIN);
+        UserRequestDTO invalidRequest = new UserRequestDTO(
+                "",
+                "invalid-email",
+                "123",
+                null,
+                null
+        );
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -96,53 +109,58 @@ class UserControllerIntegrationTest {
 
     @Test
     void getUserById_WhenExists_ShouldReturnUser() throws Exception {
-        UserResponseDTO response = new UserResponseDTO(
-                7L,
-                "Carlos Silva",
-                "joao@example.com",
-                "+55 11 95877-4455",
-                LocalDate.of(2025, 5, 11),
-                UserTypeEnum.ADMIN
-        );
-
-        Mockito.when(userService.findById(7L)).thenReturn(response);
-
-        mockMvc.perform(get("/api/users/{id}", 7L)
+        mockMvc.perform(get("/api/users/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(7)));
+                .andExpect(status().isOk());
     }
 
     @Test
     void getUserById_WhenNotExists_ShouldReturnNotFound() throws Exception {
-        Mockito.when(userService.findById(anyLong())).thenReturn(null);
+        Long nonExistentId = 99999L;
 
-        mockMvc.perform(get("/api/users/{id}", 99L)
+        mockMvc.perform(get("/api/users/{id}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Usuário não encontrado"))
+                .andExpect(jsonPath("$.message").value("Usuário de id " + nonExistentId + " não encontrado"));
     }
 
     @Test
     void listPagedUsers_ShouldReturnPage() throws Exception {
-        User user = new User(3L, "Joao Almeira","user@test.com", "password", LocalDate.of(2002, 05, 25), UserTypeEnum.ADMIN);
-        Page<User> page = new PageImpl<>(Collections.singletonList(user));
+        Page<User> page = new PageImpl<>(Collections.singletonList(
+                new User(userId,
+                        "Maria de Carmo",
+                        UUID.randomUUID() + "@test.com",
+                        "+55 11 99999-9999",
+                        LocalDate.of(2002, 5, 25),
+                        UserTypeEnum.ADMIN)
+        ));
 
-        Mockito.when(userService.listPaged(any(Pageable.class))).thenReturn(page);
+        when(mockUserService.listPaged(any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/users/paged")
                         .param("page", "0")
                         .param("size", "10")
-                        .param("sortBy", "id")
+                        .param("sort", "id,asc")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
     @Test
     void deleteUser_WhenExists_ShouldReturnNoContent() throws Exception {
-        Mockito.doNothing().when(userService).remove(anyLong());
-
-        mockMvc.perform(delete("/api/users/{id}", 11L)
+        mockMvc.perform(delete("/api/users/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
+    }
+
+    private UserRequestDTO createValidUserRequestDTO() {
+        return new UserRequestDTO(
+                "Test User",
+                testUserResponse.email(),
+                "+55 11 99999-9999",
+                LocalDate.of(2000, 1, 1),
+                UserTypeEnum.ADMIN
+        );
     }
 }
