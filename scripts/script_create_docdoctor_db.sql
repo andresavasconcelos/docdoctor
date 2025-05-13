@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `docdoctor_db`.`tbl_users` (
   `full_name` VARCHAR(255) NULL,
   `email` VARCHAR(100) NULL,
   `phone` VARCHAR(45) NULL,
-  `birth_date` VARCHAR(8) NULL,
+  `birth_date` DATE NULL,
   `user_type` VARCHAR(45) NULL,
   UNIQUE INDEX `id_UNIQUE` (`id` ASC))
 ENGINE = InnoDB;

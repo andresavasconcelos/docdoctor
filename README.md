@@ -7,12 +7,12 @@ Este projeto é um microsserviço que tem como objetivo gerenciar usuários que 
 
 ## Funcionalidades - endpoints
 
-- **Consulta de usuário por id:** GET /api/users/{id};
-- **Atualiza informacoes do usuário**: PUT /api/users/{id};
-- **Deleta usuário**: DELETE /api/users/{id};
+- **Consulta de usuário por ID:** GET /api/users/{id};
+- **Atualiza informações do usuário**: PUT /api/users/{id};
+- **Remove usuário**: DELETE /api/users/{id};
 - **Lista todos os usuários:** GET /api/users;
 - **Lista usuários com paginação:** GET /api/users/paged;
-- **Cria usuários**: POST /api/users.
+- **Cadastrar novo usuários**: POST /api/users.
 
 ## Estrutura do Projeto
 
@@ -59,6 +59,11 @@ docdoctor
 │       │           └── UserServiceImplTest.java
 │       └── resources
 └── pom.xml
+└── scripts 
+      └── model_docdoctor.mwb
+      └── script_create_docdoctor_db.sql
+      └── script_create_users.sql
+  
 ```
 
 ## Passos para Executar o Projeto
@@ -66,7 +71,9 @@ docdoctor
 ### Pré-requisitos 
 
 - **Java 17**
-- **Maven 3.10.1**
+- **Maven 3.10.1+**
+- **Docker instalado**
+- **MySQL ou outro SGBD compatível**
 
 ### Executar a Aplicação
 
@@ -77,7 +84,12 @@ docdoctor
     cd docdoctor
     ```
 
-2. Compile e execute o projeto:
+2. Execute o banco de dados com docker
+
+    ```bash
+    docker compose up
+    ```
+3. Compile e execute o projeto:
 
     ```bash
     mvn clean install
@@ -85,8 +97,8 @@ docdoctor
 
 3. Acesse o serviço:
 
-   O serviço estará disponível em `http://localhost:8080`.
-   O swagger estará disponível em `http://localhost:8080/swagger-ui/index.html`.
+  - Serviço: `http://localhost:8080`.
+  - Documentação (Swagger UI): `http://localhost:8080/swagger-ui/index.html`.
 
 
 ### Executar Testes
